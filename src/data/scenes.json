@@ -6,7 +6,7 @@
     "title": "データから、伝わる物語へ。",
     "body": "資料・分析結果を、ナレーション付きスライド動画に変換する。",
     "narration": "ASTRO Motion Studio は、資料や分析結果を、伝わるストーリーに変換するための動画スライド基盤です。",
-    "audioFile": "audio/01-hero.mp3",
+    "audioFile": "audio/01-hero.wav",
     "durationSeconds": 7,
     "accent": "#6EE7F9"
   },
@@ -22,7 +22,7 @@
     },
     "body": "数字だけを並べず、意味と変化を同時に見せます。",
     "narration": "例えば、施策日の売上が十二点四パーセント伸びたとします。数字だけではなく、前年差や意味まで同時に見せることで、理解の速度を上げます。",
-    "audioFile": "audio/02-metric.mp3",
+    "audioFile": "audio/02-metric.wav",
     "durationSeconds": 10,
     "accent": "#A7F3D0"
   },
@@ -43,7 +43,7 @@
     },
     "body": "比較対象を明示すると、効果測定の考え方まで説明できます。",
     "narration": "施策の評価では、実績だけを見るのではなく、施策がなかった場合の売上を推定して比較します。こうした考え方も、図解とナレーションで直感的に説明できます。",
-    "audioFile": "audio/03-compare.mp3",
+    "audioFile": "audio/03-compare.wav",
     "durationSeconds": 11,
     "accent": "#FDE68A"
   },
@@ -59,7 +59,7 @@
       "MP4レンダリング"
     ],
     "narration": "作り方はシンプルです。資料を読み込み、伝える順番を組み立て、ナレーションを生成し、最後に動画としてレンダリングします。",
-    "audioFile": "audio/04-process.mp3",
+    "audioFile": "audio/04-process.wav",
     "durationSeconds": 9,
     "accent": "#C4B5FD"
   },
@@ -75,7 +75,7 @@
     ],
     "body": "ASTRO Motion Studio — narrated slides, generated as code.",
     "narration": "中身は scenes.json に集約します。内容を差し替えれば何度でも再生成でき、分析報告、教育コンテンツ、会議資料へ横展開できます。",
-    "audioFile": "audio/05-summary.mp3",
+    "audioFile": "audio/05-summary.wav",
     "durationSeconds": 9,
     "accent": "#FDA4AF"
   }
