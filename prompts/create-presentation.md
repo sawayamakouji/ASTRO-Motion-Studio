@@ -20,7 +20,7 @@ Rules:
    - kicker
    - title
    - narration
-   - audioFile: audio/<id>.mp3
+   - audioFile: audio/<id>.wav
    - durationSeconds
    - accent
 7. durationSeconds is only a fallback. Estimate generously enough for narration.

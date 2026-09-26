@@ -1,14 +1,19 @@
 {
   "name": "astro-motion-studio",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Narrated slide videos from structured scenes using Remotion and OpenAI TTS.",
+  "description": "Narrated slide videos from structured scenes using Remotion and switchable local/cloud TTS.",
   "scripts": {
     "studio": "remotion studio src/index.ts",
-    "narrate": "node --env-file=.env scripts/generate-narration.mjs",
+    "narrate": "node scripts/generate-narration.mjs",
+    "narrate:voicevox": "node scripts/generate-narration.mjs --provider=voicevox",
+    "narrate:openai": "node scripts/generate-narration.mjs --provider=openai",
+    "narrate:none": "node scripts/generate-narration.mjs --provider=none",
+    "voices": "node scripts/list-voicevox-speakers.mjs",
     "render": "remotion render src/index.ts AstroNarratedSlides out/astro-motion-studio.mp4 --codec=h264",
     "make": "npm run narrate && npm run render",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:scripts": "node --check scripts/generate-narration.mjs && node --check scripts/list-voicevox-speakers.mjs && node --check scripts/lib/env.mjs && node --check scripts/tts/voicevox.mjs && node --check scripts/tts/openai.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.529",
