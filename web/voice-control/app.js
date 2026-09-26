@@ -43,10 +43,15 @@ const api = async (url, options = {}) => {
 };
 
 const selectedSpeakerId = () => {
-  const direct = Number(els.speaker.value);
-  if (Number.isInteger(direct)) return direct;
-  const preferred = Number(els.speaker.dataset.preferred);
-  return Number.isInteger(preferred) ? preferred : null;
+  if (els.speaker.value !== '') {
+    const direct = Number(els.speaker.value);
+    if (Number.isInteger(direct)) return direct;
+  }
+  if (els.speaker.dataset.preferred !== '') {
+    const preferred = Number(els.speaker.dataset.preferred);
+    if (Number.isInteger(preferred)) return preferred;
+  }
+  return null;
 };
 
 const currentSettings = () => ({
