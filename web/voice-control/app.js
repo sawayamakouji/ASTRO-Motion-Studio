@@ -42,14 +42,29 @@ const api = async (url, options = {}) => {
   return response;
 };
 
+const selectedSpeakerId = () => {
+  const direct = Number(els.speaker.value);
+  if (Number.isInteger(direct)) return direct;
+  const preferred = Number(els.speaker.dataset.preferred);
+  return Number.isInteger(preferred) ? preferred : null;
+};
+
 const currentSettings = () => ({
   baseUrl: els.baseUrl.value.trim(),
-  speakerId: els.speaker.value === '' ? null : Number(els.speaker.value),
+  speakerId: selectedSpeakerId(),
   speed: Number(els.speed.value),
   pitch: Number(els.pitch.value),
   intonation: Number(els.intonation.value),
   volume: Number(els.volume.value),
 });
+
+const escapeHtml = (value) =>
+  String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 
 const postJson = async (url, body) =>
   api(url, {
@@ -103,7 +118,10 @@ const loadSpeakers = async () => {
     }
 
     els.speaker.innerHTML = options
-      .map(({id, label}) => `<option value="${id}">${label} · ID ${id}</option>`)
+      .map(
+        ({id, label}) =>
+          `<option value="${id}">${escapeHtml(label)} · ID ${id}</option>`,
+      )
       .join('');
 
     const preferred = els.speaker.dataset.preferred;
@@ -128,13 +146,13 @@ const loadScenes = async () => {
   els.sceneList.innerHTML = scenes
     .map(
       (scene, index) => `
-      <div class="scene-card" data-id="${scene.id}">
+      <div class="scene-card" data-id="${escapeHtml(scene.id)}">
         <div class="scene-index">${String(index + 1).padStart(2, '0')}</div>
         <div class="scene-copy">
-          <h3>${scene.title}</h3>
-          <p>${scene.narration}</p>
+          <h3>${escapeHtml(scene.title)}</h3>
+          <p>${escapeHtml(scene.narration)}</p>
         </div>
-        <button class="scene-button" data-generate="${scene.id}">このシーンだけ生成</button>
+        <button class="scene-button" data-generate="${escapeHtml(scene.id)}">このシーンだけ生成</button>
       </div>
     `,
     )
