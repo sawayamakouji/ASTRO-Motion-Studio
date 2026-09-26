@@ -1,6 +1,7 @@
 node_modules/
 out/
 .env
+.astro/
 .DS_Store
 *.log
 public/audio/*.mp3
