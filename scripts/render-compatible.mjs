@@ -228,7 +228,9 @@ const renderFrames = async () => {
   console.log(
     `[ASTRO] Rendering ${kind} frames with Remotion (${scale === 1 ? '1920x1080' : '960x540'})...`,
   );
-  await run(remotionCommand(), commandArgs);
+  await run(remotionCommand(), commandArgs, {
+    shell: process.platform === 'win32',
+  });
   return normalizeFrames();
 };
 
@@ -258,7 +260,7 @@ const encodeVideo = async (ffmpeg, timeline) => {
     });
     const labels = audioScenes.map((_, index) => `[a${index}]`).join('');
     filters.push(
-      `${labels}amix=inputs=${audioScenes.length}:duration=longest:dropout_transition=0,apad[aout]`,
+      `${labels}amix=inputs=${audioScenes.length}:duration=longest:dropout_transition=0:normalize=0,apad[aout]`,
     );
 
     outputArgs.push(
