@@ -25,10 +25,23 @@ const els = {
   progressWrap: $('#progressWrap'),
   progressBar: $('#progressBar'),
   progressText: $('#progressText'),
+  renderPreview: $('#renderPreviewButton'),
+  renderFinal: $('#renderFinalButton'),
+  renderProgressBar: $('#renderProgressBar'),
+  renderProgressText: $('#renderProgressText'),
+  renderState: $('#renderState'),
+  renderOutput: $('#renderOutput'),
+  renderLog: $('#renderLog'),
+  videoPlayer: $('#videoPlayer'),
+  videoEmpty: $('#videoEmptyState'),
+  previewLink: $('#previewLink'),
+  finalLink: $('#finalLink'),
 };
 
 let scenes = [];
 let currentAudioUrl = null;
+let renderPollTimer = null;
+let lastRenderedKey = '';
 
 const api = async (url, options = {}) => {
   const response = await fetch(url, options);
@@ -234,6 +247,130 @@ const generateOne = async (id, button) => {
   }
 };
 
+const showVideo = (url) => {
+  if (!url) return;
+  els.videoPlayer.src = `${url}?v=${Date.now()}`;
+  els.videoPlayer.classList.remove('hidden');
+  els.videoEmpty.classList.add('hidden');
+  els.videoPlayer.load();
+};
+
+const setRenderButtons = (running) => {
+  els.renderPreview.disabled = running;
+  els.renderFinal.disabled = running;
+};
+
+const renderLabel = (status) => {
+  if (status === 'running') return 'レンダリング中';
+  if (status === 'done') return '完了';
+  if (status === 'error') return 'エラー';
+  return '待機中';
+};
+
+const updateRenderUi = (state) => {
+  const running = state.status === 'running';
+  setRenderButtons(running);
+
+  els.renderState.textContent = renderLabel(state.status);
+  els.renderState.className =
+    state.status === 'running'
+      ? 'rendering'
+      : state.status === 'error'
+        ? 'error'
+        : state.status === 'done'
+          ? 'success'
+          : '';
+
+  els.renderProgressBar.style.width = `${Math.max(0, Math.min(100, state.progress || 0))}%`;
+  els.renderProgressText.textContent =
+    state.status === 'running'
+      ? `${state.kind === 'preview' ? '軽量プレビュー' : '最終MP4'}を生成中 · ${state.progress || 0}%`
+      : state.status === 'done'
+        ? 'レンダリング完了 ✓'
+        : state.status === 'error'
+          ? state.error || 'レンダリングに失敗しました'
+          : 'レンダリング待機中';
+
+  els.renderProgressText.className =
+    state.status === 'error'
+      ? 'error'
+      : state.status === 'done'
+        ? 'success'
+        : '';
+
+  els.renderOutput.textContent =
+    state.kind === 'preview'
+      ? '軽量プレビュー · 960×540'
+      : state.kind === 'final'
+        ? '最終MP4 · 1920×1080'
+        : '—';
+
+  els.renderLog.textContent = state.latestLog || state.error || '—';
+
+  els.previewLink.classList.toggle('disabled', !state.previewReady);
+  els.finalLink.classList.toggle('disabled', !state.finalReady);
+
+  if (state.status === 'done' && state.outputUrl && state.finishedAt) {
+    const key = `${state.outputUrl}:${state.finishedAt}`;
+    if (key !== lastRenderedKey) {
+      lastRenderedKey = key;
+      showVideo(state.outputUrl);
+    }
+  } else if (
+    state.status === 'idle' &&
+    els.videoPlayer.classList.contains('hidden')
+  ) {
+    if (state.finalReady) showVideo('/media/final.mp4');
+    else if (state.previewReady) showVideo('/media/preview.mp4');
+  }
+};
+
+const pollRenderStatus = async () => {
+  try {
+    const response = await api('/api/render-status');
+    const state = await response.json();
+    updateRenderUi(state);
+
+    if (state.status === 'running') {
+      clearTimeout(renderPollTimer);
+      renderPollTimer = setTimeout(pollRenderStatus, 900);
+    }
+  } catch (error) {
+    els.renderState.textContent = '状態取得エラー';
+    els.renderState.className = 'error';
+    els.renderLog.textContent = error.message;
+    setRenderButtons(false);
+  }
+};
+
+const startRender = async (kind) => {
+  clearTimeout(renderPollTimer);
+  setRenderButtons(true);
+  els.renderState.textContent = '開始中...';
+  els.renderState.className = 'rendering';
+  els.renderProgressBar.style.width = '2%';
+  els.renderProgressText.textContent =
+    kind === 'preview'
+      ? '軽量プレビューを開始しています...'
+      : '最終MP4を開始しています...';
+
+  try {
+    const response = await postJson(
+      kind === 'preview' ? '/api/render-preview' : '/api/render-final',
+      {},
+    );
+    updateRenderUi(await response.json());
+    renderPollTimer = setTimeout(pollRenderStatus, 700);
+  } catch (error) {
+    setRenderButtons(false);
+    els.renderState.textContent = 'エラー';
+    els.renderState.className = 'error';
+    els.renderProgressText.textContent = error.message;
+    els.renderProgressText.className = 'error';
+    els.renderLog.textContent = error.message;
+  }
+};
+
 const generateAll = async () => {
   setBusy(true);
   els.progressWrap.classList.remove('hidden');
@@ -267,6 +404,8 @@ els.refresh.addEventListener('click', loadSpeakers);
 els.save.addEventListener('click', save);
 els.preview.addEventListener('click', preview);
 els.generateAll.addEventListener('click', generateAll);
+els.renderPreview.addEventListener('click', () => startRender('preview'));
+els.renderFinal.addEventListener('click', () => startRender('final'));
 
 els.sceneList.addEventListener('click', (event) => {
   const button = event.target.closest('[data-generate]');
@@ -277,7 +416,7 @@ els.sceneList.addEventListener('click', (event) => {
 (async () => {
   try {
     await loadConfig();
-    await Promise.all([loadScenes(), loadSpeakers()]);
+    await Promise.all([loadScenes(), loadSpeakers(), pollRenderStatus()]);
   } catch (error) {
     setStatus(false, '初期化エラー');
     els.previewState.textContent = error.message;

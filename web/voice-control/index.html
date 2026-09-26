@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ASTRO Motion Studio — Voice Control</title>
+  <title>ASTRO Motion Studio — Voice & Render</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -14,8 +14,8 @@
     <header class="topbar">
       <div>
         <div class="eyebrow">ASTRO MOTION STUDIO</div>
-        <h1>Voice Control</h1>
-        <p>VOICEVOX / VOICEVOX Nemo の声を選び、試聴し、そのまま全スライドへ。</p>
+        <h1>Voice & Render</h1>
+        <p>声を整え、そのまま動画プレビューと最終MP4まで。</p>
       </div>
       <div id="engineStatus" class="status status-waiting">
         <span class="dot"></span>
@@ -115,9 +115,58 @@
       <div id="sceneList" class="scene-list"></div>
     </section>
 
+    <section class="panel render-panel">
+      <div class="section-head render-header">
+        <div>
+          <div class="section-kicker">RENDER</div>
+          <h2>動画プレビュー / MP4生成</h2>
+          <p>軽量プレビューで確認してから、1920×1080の最終版を書き出します。</p>
+        </div>
+        <div class="render-actions">
+          <button id="renderPreviewButton" class="secondary-button">軽量プレビューを生成</button>
+          <button id="renderFinalButton" class="primary-button large">最終MP4を生成</button>
+        </div>
+      </div>
+
+      <div id="renderProgressWrap" class="progress-wrap">
+        <div class="progress-track"><div id="renderProgressBar" class="progress-bar"></div></div>
+        <span id="renderProgressText">レンダリング待機中</span>
+      </div>
+
+      <div class="render-grid">
+        <div class="video-stage">
+          <div id="videoEmptyState" class="video-empty">
+            <div class="video-empty-icon">▶</div>
+            <strong>まだ動画はありません</strong>
+            <span>「軽量プレビューを生成」から始められます。</span>
+          </div>
+          <video id="videoPlayer" class="video-player hidden" controls playsinline></video>
+        </div>
+
+        <aside class="render-info">
+          <div class="render-stat">
+            <span>状態</span>
+            <strong id="renderState">待機中</strong>
+          </div>
+          <div class="render-stat">
+            <span>出力</span>
+            <strong id="renderOutput">—</strong>
+          </div>
+          <div class="render-stat">
+            <span>最新ログ</span>
+            <code id="renderLog">—</code>
+          </div>
+          <div class="render-links">
+            <a id="previewLink" class="media-link disabled" href="/media/preview.mp4" target="_blank">プレビューMP4</a>
+            <a id="finalLink" class="media-link disabled" href="/media/final.mp4" target="_blank">最終MP4</a>
+          </div>
+        </aside>
+      </div>
+    </section>
+
     <footer>
       <span>Local only · 127.0.0.1</span>
-      <span>生成音声は public/audio/ に保存されます。</span>
+      <span>音声は public/audio/、動画は out/ に保存されます。</span>
     </footer>
   </main>
 
