@@ -1,12 +1,14 @@
-const numberEnv = (name, fallback) => {
-  const raw = process.env[name];
-  if (raw === undefined || raw === '') return fallback;
-  const value = Number(raw);
-  if (!Number.isFinite(value)) {
-    throw new Error(`${name} must be a number. Received: ${raw}`);
+const readNumber = (value, fallback, label) => {
+  if (value === undefined || value === null || value === '') return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`${label} must be a number. Received: ${value}`);
   }
-  return value;
+  return parsed;
 };
+
+const envNumber = (name, fallback) =>
+  readNumber(process.env[name], fallback, name);
 
 const request = async (url, init = {}) => {
   try {
@@ -18,30 +20,39 @@ const request = async (url, init = {}) => {
   }
 };
 
-export const createVoicevoxProvider = () => {
+export const listVoicevoxSpeakers = async (
+  baseUrlValue = process.env.ASTRO_VOICEVOX_URL || 'http://127.0.0.1:50021',
+) => {
+  const baseUrl = new URL(baseUrlValue);
+  const response = await request(new URL('/speakers', baseUrl));
+  if (!response.ok) {
+    throw new Error(
+      `VOICEVOX speakers API failed: ${response.status} ${await response.text()}`,
+    );
+  }
+  return response.json();
+};
+
+export const createVoicevoxProvider = (options = {}) => {
   const baseUrl = new URL(
-    process.env.ASTRO_VOICEVOX_URL || 'http://127.0.0.1:50021',
+    options.baseUrl ||
+      process.env.ASTRO_VOICEVOX_URL ||
+      'http://127.0.0.1:50021',
   );
 
   const resolveSpeakerId = async () => {
-    const configured = process.env.ASTRO_VOICEVOX_SPEAKER_ID;
+    const configured =
+      options.speakerId ?? process.env.ASTRO_VOICEVOX_SPEAKER_ID;
+
     if (configured !== undefined && configured !== '') {
       const id = Number(configured);
       if (!Number.isInteger(id)) {
-        throw new Error('ASTRO_VOICEVOX_SPEAKER_ID must be an integer.');
+        throw new Error('VOICEVOX speaker id must be an integer.');
       }
       return id;
     }
 
-    const url = new URL('/speakers', baseUrl);
-    const response = await request(url);
-    if (!response.ok) {
-      throw new Error(
-        `VOICEVOX speakers API failed: ${response.status} ${await response.text()}`,
-      );
-    }
-
-    const speakers = await response.json();
+    const speakers = await listVoicevoxSpeakers(baseUrl.toString());
     const firstStyle = speakers?.[0]?.styles?.[0];
     if (!firstStyle) {
       throw new Error('VOICEVOX に利用可能な話者が見つかりません。');
@@ -75,23 +86,38 @@ export const createVoicevoxProvider = () => {
       }
 
       const query = await queryResponse.json();
-      query.speedScale = numberEnv('ASTRO_VOICEVOX_SPEED', query.speedScale ?? 1);
-      query.pitchScale = numberEnv('ASTRO_VOICEVOX_PITCH', query.pitchScale ?? 0);
-      query.intonationScale = numberEnv(
-        'ASTRO_VOICEVOX_INTONATION',
-        query.intonationScale ?? 1,
+      query.speedScale = readNumber(
+        options.speed,
+        envNumber('ASTRO_VOICEVOX_SPEED', query.speedScale ?? 1),
+        'speed',
       );
-      query.volumeScale = numberEnv(
-        'ASTRO_VOICEVOX_VOLUME',
-        query.volumeScale ?? 1,
+      query.pitchScale = readNumber(
+        options.pitch,
+        envNumber('ASTRO_VOICEVOX_PITCH', query.pitchScale ?? 0),
+        'pitch',
       );
-      query.prePhonemeLength = numberEnv(
-        'ASTRO_VOICEVOX_PRE_PHONEME',
-        query.prePhonemeLength ?? 0.1,
+      query.intonationScale = readNumber(
+        options.intonation,
+        envNumber('ASTRO_VOICEVOX_INTONATION', query.intonationScale ?? 1),
+        'intonation',
       );
-      query.postPhonemeLength = numberEnv(
-        'ASTRO_VOICEVOX_POST_PHONEME',
-        query.postPhonemeLength ?? 0.1,
+      query.volumeScale = readNumber(
+        options.volume,
+        envNumber('ASTRO_VOICEVOX_VOLUME', query.volumeScale ?? 1),
+        'volume',
+      );
+      query.prePhonemeLength = readNumber(
+        options.prePhoneme,
+        envNumber('ASTRO_VOICEVOX_PRE_PHONEME', query.prePhonemeLength ?? 0.1),
+        'prePhoneme',
+      );
+      query.postPhonemeLength = readNumber(
+        options.postPhoneme,
+        envNumber(
+          'ASTRO_VOICEVOX_POST_PHONEME',
+          query.postPhonemeLength ?? 0.1,
+        ),
+        'postPhoneme',
       );
 
       const synthesisUrl = new URL('/synthesis', baseUrl);
