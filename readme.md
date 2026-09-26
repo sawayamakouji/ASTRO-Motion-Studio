@@ -61,8 +61,9 @@ npm run voice-ui
 - 最終MP4の生成
 - レンダリング進捗・ログ表示
 - 完成動画のブラウザ再生
+- Windows管理PCでは、許可済みの外部FFmpegを使う互換レンダリングを自動選択
 
-設定は `.astro/voice-ui.json` に保存され、Gitには入りません。詳細は `docs/VOICE_UI.md`。
+設定は `.astro/voice-ui.json` に保存され、Gitには入りません。詳細は `docs/VOICE_UI.md` と `docs/RENDER_UI.md`。
 
 ## まず無料で動かす
 
@@ -121,9 +122,19 @@ npm run studio
 
 ### 6. MP4を書き出す
 
+通常のRemotionレンダラー:
+
 ```bash
 npm run render
 ```
+
+Windows管理PCなどでRemotion同梱FFmpegがブロックされる場合:
+
+```bash
+npm run render:compatible
+```
+
+ブラウザUIではWindows環境を検出し、既定で互換レンダリングを使います。互換モードは、Remotionで画像フレームを生成し、PATH上の許可済み外部FFmpegでVOICEVOX音声と結合してMP4化します。
 
 出力:
 
@@ -227,6 +238,8 @@ npm run narrate:openai
 npm run narrate:none
 npm run render:preview
 npm run render
+npm run render:preview:compatible
+npm run render:compatible
 npm run make
 npm run typecheck
 npm run check:scripts
