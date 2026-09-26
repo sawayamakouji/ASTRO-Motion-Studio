@@ -12,7 +12,8 @@
     "voices": "node scripts/list-voicevox-speakers.mjs",
     "render": "remotion render src/index.ts AstroNarratedSlides out/astro-motion-studio.mp4 --codec=h264",
     "make": "npm run narrate && npm run render",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:scripts": "node --check scripts/generate-narration.mjs && node --check scripts/list-voicevox-speakers.mjs && node --check scripts/lib/env.mjs && node --check scripts/tts/voicevox.mjs && node --check scripts/tts/openai.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.529",
