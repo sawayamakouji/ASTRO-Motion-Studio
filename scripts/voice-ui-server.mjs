@@ -1,5 +1,7 @@
 import {createServer} from 'node:http';
-import {mkdir, readFile, writeFile} from 'node:fs/promises';
+import {spawn} from 'node:child_process';
+import {createReadStream} from 'node:fs';
+import {mkdir, readFile, stat, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {loadLocalEnv} from './lib/env.mjs';
 import {
@@ -16,14 +18,17 @@ const UI_DIR = path.join(ROOT, 'web', 'voice-control');
 const SCENES_PATH = path.join(ROOT, 'src', 'data', 'scenes.json');
 const SETTINGS_PATH = path.join(ROOT, '.astro', 'voice-ui.json');
 const AUDIO_ROOT = path.join(ROOT, 'public', 'audio');
+const OUT_DIR = path.join(ROOT, 'out');
+const PREVIEW_VIDEO = path.join(OUT_DIR, 'preview.mp4');
+const FINAL_VIDEO = path.join(OUT_DIR, 'astro-motion-studio.mp4');
 
-const json = (res, status, value) => {
-  res.writeHead(status, {'Content-Type': 'application/json; charset=utf-8'});
+const json = (res, statusCode, value) => {
+  res.writeHead(statusCode, {'Content-Type': 'application/json; charset=utf-8'});
   res.end(JSON.stringify(value));
 };
 
-const text = (res, status, value, type = 'text/plain; charset=utf-8') => {
-  res.writeHead(status, {'Content-Type': type});
+const text = (res, statusCode, value, type = 'text/plain; charset=utf-8') => {
+  res.writeHead(statusCode, {'Content-Type': type});
   res.end(value);
 };
 
@@ -37,6 +42,16 @@ const readBody = async (req) => {
   }
   if (chunks.length === 0) return {};
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+};
+
+const fileExists = async (filename) => {
+  try {
+    await stat(filename);
+    return true;
+  } catch (error) {
+    if (error?.code === 'ENOENT') return false;
+    throw error;
+  }
 };
 
 const getScenes = async () => JSON.parse(await readFile(SCENES_PATH, 'utf8'));
@@ -143,6 +158,178 @@ const generateScene = async (scene, settings) => {
   };
 };
 
+const renderState = {
+  status: 'idle',
+  kind: null,
+  progress: 0,
+  startedAt: null,
+  finishedAt: null,
+  outputUrl: null,
+  log: [],
+  error: null,
+};
+
+const pushRenderLog = (chunk) => {
+  const lines = String(chunk)
+    .split(/\r?\n|\r/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  for (const line of lines) {
+    renderState.log.push(line);
+    if (renderState.log.length > 14) renderState.log.shift();
+
+    const ratio = line.match(/Rendered\s+(\d+)\s*\/\s*(\d+)/i);
+    if (ratio) {
+      const current = Number(ratio[1]);
+      const total = Number(ratio[2]);
+      if (total > 0) {
+        renderState.progress = Math.max(
+          renderState.progress,
+          Math.min(96, Math.round((current / total) * 96)),
+        );
+      }
+    }
+
+    const percent = line.match(/(?:^|\s)(\d{1,3})%/);
+    if (percent) {
+      renderState.progress = Math.max(
+        renderState.progress,
+        Math.min(96, Number(percent[1])),
+      );
+    }
+  }
+};
+
+const runNpmScript = (scriptName) => {
+  if (process.platform === 'win32') {
+    return spawn('cmd.exe', ['/d', '/s', '/c', `npm run ${scriptName}`], {
+      cwd: ROOT,
+      env: process.env,
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  }
+
+  return spawn('npm', ['run', scriptName], {
+    cwd: ROOT,
+    env: process.env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+};
+
+const startRender = async (kind) => {
+  if (renderState.status === 'running') {
+    const error = new Error('別の動画レンダリングが進行中です。');
+    error.statusCode = 409;
+    throw error;
+  }
+
+  const scriptName = kind === 'preview' ? 'render:preview' : 'render';
+  const outputUrl =
+    kind === 'preview' ? '/media/preview.mp4' : '/media/final.mp4';
+
+  await mkdir(OUT_DIR, {recursive: true});
+
+  Object.assign(renderState, {
+    status: 'running',
+    kind,
+    progress: 2,
+    startedAt: new Date().toISOString(),
+    finishedAt: null,
+    outputUrl,
+    log: [`${kind === 'preview' ? 'Preview' : 'Final'} render started`],
+    error: null,
+  });
+
+  const child = runNpmScript(scriptName);
+
+  child.stdout.on('data', pushRenderLog);
+  child.stderr.on('data', pushRenderLog);
+
+  child.on('error', (error) => {
+    Object.assign(renderState, {
+      status: 'error',
+      progress: 0,
+      finishedAt: new Date().toISOString(),
+      error: error.message,
+    });
+  });
+
+  child.on('close', (code) => {
+    if (renderState.status === 'error') return;
+
+    if (code === 0) {
+      Object.assign(renderState, {
+        status: 'done',
+        progress: 100,
+        finishedAt: new Date().toISOString(),
+        error: null,
+      });
+      pushRenderLog('Render complete.');
+      return;
+    }
+
+    Object.assign(renderState, {
+      status: 'error',
+      progress: 0,
+      finishedAt: new Date().toISOString(),
+      error: `Render process exited with code ${code}.`,
+    });
+  });
+
+  return renderState;
+};
+
+const renderStatusPayload = async () => ({
+  ...renderState,
+  previewReady: await fileExists(PREVIEW_VIDEO),
+  finalReady: await fileExists(FINAL_VIDEO),
+  latestLog: renderState.log.at(-1) || '',
+});
+
+const streamVideo = async (req, res, filename) => {
+  const info = await stat(filename);
+  const range = req.headers.range;
+
+  res.setHeader('Content-Type', 'video/mp4');
+  res.setHeader('Accept-Ranges', 'bytes');
+  res.setHeader('Cache-Control', 'no-store');
+
+  if (!range) {
+    res.writeHead(200, {'Content-Length': info.size});
+    return createReadStream(filename).pipe(res);
+  }
+
+  const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+  if (!match) {
+    res.writeHead(416, {'Content-Range': `bytes */${info.size}`});
+    return res.end();
+  }
+
+  const start = match[1] ? Number(match[1]) : 0;
+  const end = match[2] ? Number(match[2]) : info.size - 1;
+
+  if (
+    !Number.isInteger(start) ||
+    !Number.isInteger(end) ||
+    start < 0 ||
+    end < start ||
+    start >= info.size
+  ) {
+    res.writeHead(416, {'Content-Range': `bytes */${info.size}`});
+    return res.end();
+  }
+
+  const boundedEnd = Math.min(end, info.size - 1);
+  res.writeHead(206, {
+    'Content-Range': `bytes ${start}-${boundedEnd}/${info.size}`,
+    'Content-Length': boundedEnd - start + 1,
+  });
+
+  return createReadStream(filename, {start, end: boundedEnd}).pipe(res);
+};
+
 const staticFiles = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/index.html', ['index.html', 'text/html; charset=utf-8']],
@@ -239,6 +426,32 @@ const server = createServer(async (req, res) => {
       return json(res, 200, {generated});
     }
 
+    if (req.method === 'GET' && url.pathname === '/api/render-status') {
+      return json(res, 200, await renderStatusPayload());
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/render-preview') {
+      return json(res, 202, await startRender('preview'));
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/render-final') {
+      return json(res, 202, await startRender('final'));
+    }
+
+    if (req.method === 'GET' && url.pathname === '/media/preview.mp4') {
+      if (!(await fileExists(PREVIEW_VIDEO))) {
+        return json(res, 404, {error: 'Preview video has not been rendered yet.'});
+      }
+      return streamVideo(req, res, PREVIEW_VIDEO);
+    }
+
+    if (req.method === 'GET' && url.pathname === '/media/final.mp4') {
+      if (!(await fileExists(FINAL_VIDEO))) {
+        return json(res, 404, {error: 'Final video has not been rendered yet.'});
+      }
+      return streamVideo(req, res, FINAL_VIDEO);
+    }
+
     const staticEntry = staticFiles.get(url.pathname);
     if (req.method === 'GET' && staticEntry) {
       const [filename, type] = staticEntry;
@@ -253,13 +466,17 @@ const server = createServer(async (req, res) => {
     return json(res, 404, {error: 'Not found.'});
   } catch (error) {
     console.error(error);
-    return json(res, 500, {error: error.message || 'Unexpected error.'});
+    return json(
+      res,
+      Number(error.statusCode) || 500,
+      {error: error.message || 'Unexpected error.'},
+    );
   }
 });
 
 server.listen(PORT, HOST, () => {
   console.log('');
-  console.log('ASTRO Motion Studio — Voice Control');
+  console.log('ASTRO Motion Studio — Voice & Render Control');
   console.log(`http://${HOST}:${PORT}`);
   console.log('');
   console.log('VOICEVOX Nemo / VOICEVOX を起動した状態でブラウザを開いてください。');
