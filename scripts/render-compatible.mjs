@@ -15,8 +15,8 @@ const outputFile =
     ? path.join(OUT_DIR, 'preview.mp4')
     : path.join(OUT_DIR, 'astro-motion-studio.mp4');
 
-const rawFramesDir = path.join(OUT_DIR, `.astro-${kind}-raw`);
-const framesDir = path.join(OUT_DIR, `.astro-${kind}-frames`);
+const rawFramesDir = path.join(OUT_DIR, `astro-${kind}-raw`);
+const framesDir = path.join(OUT_DIR, `astro-${kind}-frames`);
 
 const exists = async (filename) => {
   try {
