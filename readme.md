@@ -57,6 +57,10 @@ npm run voice-ui
 - 1シーンだけ生成
 - 全スライドを一括生成
 - 設定保存
+- 軽量プレビュー動画の生成
+- 最終MP4の生成
+- レンダリング進捗・ログ表示
+- 完成動画のブラウザ再生
 
 設定は `.astro/voice-ui.json` に保存され、Gitには入りません。詳細は `docs/VOICE_UI.md`。
 
@@ -221,6 +225,7 @@ npm run narrate
 npm run narrate:voicevox
 npm run narrate:openai
 npm run narrate:none
+npm run render:preview
 npm run render
 npm run make
 npm run typecheck
@@ -229,7 +234,6 @@ npm run check:scripts
 
 ## Next milestones
 
-- ブラウザUIからRemotionプレビュー / レンダリングまで実行
 - 資料アップロード → scenes.json 自動生成
 - 画像・図解生成レイヤー
 - 棒グラフ / 折れ線 / 因果推論 / 店舗比較などの分析テンプレート
