@@ -1,0 +1,82 @@
+[
+  {
+    "id": "01-hero",
+    "type": "hero",
+    "kicker": "ASTRO MOTION STUDIO",
+    "title": "データから、伝わる物語へ。",
+    "body": "資料・分析結果を、ナレーション付きスライド動画に変換する。",
+    "narration": "ASTRO Motion Studio は、資料や分析結果を、伝わるストーリーに変換するための動画スライド基盤です。",
+    "audioFile": "audio/01-hero.mp3",
+    "durationSeconds": 7,
+    "accent": "#6EE7F9"
+  },
+  {
+    "id": "02-metric",
+    "type": "metric",
+    "kicker": "KEY METRIC",
+    "title": "重要な数字を、一瞬で理解できる形に。",
+    "metric": {
+      "value": "+12.4%",
+      "label": "施策日の売上伸長（デモ値）",
+      "delta": "前年差 +3.1pt"
+    },
+    "body": "数字だけを並べず、意味と変化を同時に見せます。",
+    "narration": "例えば、施策日の売上が十二点四パーセント伸びたとします。数字だけではなく、前年差や意味まで同時に見せることで、理解の速度を上げます。",
+    "audioFile": "audio/02-metric.mp3",
+    "durationSeconds": 10,
+    "accent": "#A7F3D0"
+  },
+  {
+    "id": "03-compare",
+    "type": "compare",
+    "kicker": "COUNTERFACTUAL",
+    "title": "実績と、もし施策がなかった世界を比較する。",
+    "left": {
+      "label": "実績",
+      "value": "1.12億円",
+      "note": "施策あり"
+    },
+    "right": {
+      "label": "反実仮想",
+      "value": "1.00億円",
+      "note": "施策なしの推定"
+    },
+    "body": "比較対象を明示すると、効果測定の考え方まで説明できます。",
+    "narration": "施策の評価では、実績だけを見るのではなく、施策がなかった場合の売上を推定して比較します。こうした考え方も、図解とナレーションで直感的に説明できます。",
+    "audioFile": "audio/03-compare.mp3",
+    "durationSeconds": 11,
+    "accent": "#FDE68A"
+  },
+  {
+    "id": "04-process",
+    "type": "process",
+    "kicker": "WORKFLOW",
+    "title": "作り方は、4ステップ。",
+    "steps": [
+      "資料を読み込む",
+      "ストーリー化",
+      "ナレーション生成",
+      "MP4レンダリング"
+    ],
+    "narration": "作り方はシンプルです。資料を読み込み、伝える順番を組み立て、ナレーションを生成し、最後に動画としてレンダリングします。",
+    "audioFile": "audio/04-process.mp3",
+    "durationSeconds": 9,
+    "accent": "#C4B5FD"
+  },
+  {
+    "id": "05-summary",
+    "type": "summary",
+    "kicker": "ONE SOURCE, MANY OUTPUTS",
+    "title": "同じデータから、何度でも作り直せる。",
+    "bullets": [
+      "scenes.json を差し替えて再生成",
+      "音声の実尺にスライドを自動同期",
+      "分析・教育・会議資料へ展開"
+    ],
+    "body": "ASTRO Motion Studio — narrated slides, generated as code.",
+    "narration": "中身は scenes.json に集約します。内容を差し替えれば何度でも再生成でき、分析報告、教育コンテンツ、会議資料へ横展開できます。",
+    "audioFile": "audio/05-summary.mp3",
+    "durationSeconds": 9,
+    "accent": "#FDA4AF"
+  }
+]
