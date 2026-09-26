@@ -38,6 +38,28 @@ PDF / Word / Excel / CSV / analysis
 
 音声ファイルが存在する場合は、実際のナレーション尺を読み取り、必要に応じて各スライドの表示時間を自動延長します。音声がなくても `durationSeconds` を使ってプレビューできます。
 
+## ブラウザで声を選ぶ（おすすめ）
+
+VOICEVOX Nemo / VOICEVOX を起動したあと:
+
+```bash
+npm install
+npm run voice-ui
+```
+
+ブラウザで `http://127.0.0.1:4173` を開きます。
+
+ここから以下を操作できます。
+
+- 話者 / スタイル選択
+- 速度・抑揚・高さ・音量
+- 任意文章の試聴
+- 1シーンだけ生成
+- 全スライドを一括生成
+- 設定保存
+
+設定は `.astro/voice-ui.json` に保存され、Gitには入りません。詳細は `docs/VOICE_UI.md`。
+
 ## まず無料で動かす
 
 ### 1. VOICEVOX Nemo または VOICEVOX を起動
@@ -193,6 +215,7 @@ public/
 
 ```bash
 npm run studio
+npm run voice-ui
 npm run voices
 npm run narrate
 npm run narrate:voicevox
@@ -206,7 +229,7 @@ npm run check:scripts
 
 ## Next milestones
 
-- ブラウザUIで音声エンジン・話者・速度を選択
+- ブラウザUIからRemotionプレビュー / レンダリングまで実行
 - 資料アップロード → scenes.json 自動生成
 - 画像・図解生成レイヤー
 - 棒グラフ / 折れ線 / 因果推論 / 店舗比較などの分析テンプレート
