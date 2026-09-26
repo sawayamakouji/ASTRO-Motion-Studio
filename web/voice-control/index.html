@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ASTRO Motion Studio — Voice Control</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">ASTRO MOTION STUDIO</div>
+        <h1>Voice Control</h1>
+        <p>VOICEVOX / VOICEVOX Nemo の声を選び、試聴し、そのまま全スライドへ。</p>
+      </div>
+      <div id="engineStatus" class="status status-waiting">
+        <span class="dot"></span>
+        接続確認中
+      </div>
+    </header>
+
+    <section class="grid">
+      <article class="panel settings-panel">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">VOICE</div>
+            <h2>ナレーション設定</h2>
+          </div>
+          <button id="refreshButton" class="ghost-button">再接続</button>
+        </div>
+
+        <label class="field">
+          <span>VOICEVOX URL</span>
+          <input id="baseUrl" type="text" value="http://127.0.0.1:50021" />
+        </label>
+
+        <label class="field">
+          <span>話者 / スタイル</span>
+          <select id="speakerSelect">
+            <option>VOICEVOXへ接続中...</option>
+          </select>
+        </label>
+
+        <div class="slider-grid">
+          <label class="slider-field">
+            <span><b>速度</b><output id="speedValue">1.00</output></span>
+            <input id="speed" type="range" min="0.5" max="2" step="0.05" value="1" />
+          </label>
+
+          <label class="slider-field">
+            <span><b>抑揚</b><output id="intonationValue">1.00</output></span>
+            <input id="intonation" type="range" min="0" max="2" step="0.05" value="1" />
+          </label>
+
+          <label class="slider-field">
+            <span><b>高さ</b><output id="pitchValue">0.00</output></span>
+            <input id="pitch" type="range" min="-0.15" max="0.15" step="0.01" value="0" />
+          </label>
+
+          <label class="slider-field">
+            <span><b>音量</b><output id="volumeValue">1.00</output></span>
+            <input id="volume" type="range" min="0" max="2" step="0.05" value="1" />
+          </label>
+        </div>
+
+        <div class="button-row">
+          <button id="saveButton" class="secondary-button">設定を保存</button>
+          <span id="saveState" class="microcopy"></span>
+        </div>
+      </article>
+
+      <article class="panel preview-panel">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">PREVIEW</div>
+            <h2>この声で試し読み</h2>
+          </div>
+        </div>
+
+        <textarea id="previewText" rows="7">今回の分析では、施策による売上への純粋な効果を、わかりやすく見ていきます。</textarea>
+
+        <div class="preview-actions">
+          <button id="previewButton" class="primary-button">
+            <span class="play-icon">▶</span>
+            試聴する
+          </button>
+          <div id="previewState" class="microcopy">文章は自由に変更できます。</div>
+        </div>
+
+        <audio id="audioPlayer" controls></audio>
+      </article>
+    </section>
+
+    <section class="panel scenes-panel">
+      <div class="section-head scene-header">
+        <div>
+          <div class="section-kicker">SCENES</div>
+          <h2>スライドのナレーション</h2>
+          <p id="sceneSummary">読み込み中...</p>
+        </div>
+        <button id="generateAllButton" class="primary-button large">
+          全スライドの音声を生成
+        </button>
+      </div>
+
+      <div id="progressWrap" class="progress-wrap hidden">
+        <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+        <span id="progressText">生成しています...</span>
+      </div>
+
+      <div id="sceneList" class="scene-list"></div>
+    </section>
+
+    <footer>
+      <span>Local only · 127.0.0.1</span>
+      <span>生成音声は public/audio/ に保存されます。</span>
+    </footer>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
