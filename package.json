@@ -1,0 +1,29 @@
+{
+  "name": "astro-motion-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Narrated slide videos from structured scenes using Remotion and OpenAI TTS.",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "narrate": "node --env-file=.env scripts/generate-narration.mjs",
+    "render": "remotion render src/index.ts AstroNarratedSlides out/astro-motion-studio.mp4 --codec=h264",
+    "make": "npm run narrate && npm run render",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.529",
+    "@remotion/media": "4.0.529",
+    "@remotion/media-utils": "4.0.529",
+    "remotion": "4.0.529",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20.6"
+  }
+}
