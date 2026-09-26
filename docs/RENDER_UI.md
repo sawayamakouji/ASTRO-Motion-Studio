@@ -29,13 +29,45 @@ out/preview.mp4
 out/astro-motion-studio.mp4
 ```
 
-The local UI polls render status and shows recent Remotion CLI output. Only one render job can run at a time.
+The local UI polls render status and shows recent output. Only one render job can run at a time.
+
+## Windows / enterprise PC compatible rendering
+
+Some managed Windows PCs block the FFmpeg binaries bundled inside Remotion because of Code Integrity / application-control policies.
+
+ASTRO now has a compatible rendering path:
+
+```
+Remotion -> JPEG frame sequence -> allowed external FFmpeg -> H.264/AAC MP4
+                                  -> VOICEVOX WAV tracks are mixed at scene offsets
+```
+
+When `ASTRO_RENDER_MODE=auto` (default), the browser UI uses this compatible path automatically on Windows. It looks up `ffmpeg` and `ffprobe` from PATH.
+
+You can force paths in `.env` when needed:
+
+```env
+ASTRO_RENDER_MODE=compatible
+ASTRO_FFMPEG_PATH=C:\path\to\ffmpeg.exe
+ASTRO_FFPROBE_PATH=C:\path\to\ffprobe.exe
+```
+
+Temporary image frames are removed after a successful render. Set `ASTRO_KEEP_FRAMES=1` while debugging if you want to keep them.
 
 ## CLI equivalents
+
+Normal Remotion renderer:
 
 ```bash
 npm run render:preview
 npm run render
+```
+
+External-FFmpeg compatible renderer:
+
+```bash
+npm run render:preview:compatible
+npm run render:compatible
 ```
 
 The UI server is bound to `127.0.0.1` and is intended for local use only.

@@ -22,6 +22,23 @@ const OUT_DIR = path.join(ROOT, 'out');
 const PREVIEW_VIDEO = path.join(OUT_DIR, 'preview.mp4');
 const FINAL_VIDEO = path.join(OUT_DIR, 'astro-motion-studio.mp4');
 
+const configuredRenderMode = String(
+  process.env.ASTRO_RENDER_MODE || 'auto',
+).toLowerCase();
+
+const renderMode =
+  configuredRenderMode === 'auto'
+    ? process.platform === 'win32'
+      ? 'compatible'
+      : 'remotion'
+    : configuredRenderMode;
+
+if (!['compatible', 'remotion'].includes(renderMode)) {
+  throw new Error(
+    'ASTRO_RENDER_MODE must be auto, compatible, or remotion.',
+  );
+}
+
 const json = (res, statusCode, value) => {
   res.writeHead(statusCode, {'Content-Type': 'application/json; charset=utf-8'});
   res.end(JSON.stringify(value));
@@ -167,6 +184,7 @@ const renderState = {
   outputUrl: null,
   log: [],
   error: null,
+  mode: renderMode,
 };
 
 const pushRenderLog = (chunk) => {
@@ -225,7 +243,15 @@ const startRender = async (kind) => {
     throw error;
   }
 
-  const scriptName = kind === 'preview' ? 'render:preview' : 'render';
+  const scriptName =
+    renderMode === 'compatible'
+      ? kind === 'preview'
+        ? 'render:preview:compatible'
+        : 'render:compatible'
+      : kind === 'preview'
+        ? 'render:preview'
+        : 'render';
+
   const outputUrl =
     kind === 'preview' ? '/media/preview.mp4' : '/media/final.mp4';
 
@@ -238,8 +264,11 @@ const startRender = async (kind) => {
     startedAt: new Date().toISOString(),
     finishedAt: null,
     outputUrl,
-    log: [`${kind === 'preview' ? 'Preview' : 'Final'} render started`],
+    log: [
+      `${kind === 'preview' ? 'Preview' : 'Final'} render started (${renderMode})`,
+    ],
     error: null,
+    mode: renderMode,
   });
 
   const child = runNpmScript(scriptName);
@@ -274,7 +303,12 @@ const startRender = async (kind) => {
       status: 'error',
       progress: 0,
       finishedAt: new Date().toISOString(),
-      error: `Render process exited with code ${code}.`,
+      error: [
+        `Render process exited with code ${code}.`,
+        renderState.log.at(-1) || '',
+      ]
+        .filter(Boolean)
+        .join(' '),
     });
   });
 
@@ -479,5 +513,6 @@ server.listen(PORT, HOST, () => {
   console.log('ASTRO Motion Studio — Voice & Render Control');
   console.log(`http://${HOST}:${PORT}`);
   console.log('');
+  console.log(`Render mode: ${renderMode}`);
   console.log('VOICEVOX Nemo / VOICEVOX を起動した状態でブラウザを開いてください。');
 });
