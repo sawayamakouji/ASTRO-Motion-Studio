@@ -37,13 +37,33 @@ const run = (command, commandArgs, options = {}) =>
       ...options,
     });
 
-    child.stdout.on('data', (chunk) => process.stdout.write(chunk));
-    child.stderr.on('data', (chunk) => process.stderr.write(chunk));
+    const tail = [];
+    const record = (chunk, writer) => {
+      writer(chunk);
+      for (const line of String(chunk).split(/\\r?\\n|\\r/)) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        tail.push(trimmed);
+        if (tail.length > 24) tail.shift();
+      }
+    };
+
+    child.stdout.on('data', (chunk) => record(chunk, (value) => process.stdout.write(value)));
+    child.stderr.on('data', (chunk) => record(chunk, (value) => process.stderr.write(value)));
 
     child.on('error', reject);
     child.on('close', (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`${path.basename(command)} exited with code ${code}`));
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      const detail = tail.length > 0 ? `\\n${tail.join('\\n')}` : '';
+      reject(
+        new Error(
+          `${path.basename(command)} exited with code ${code}.${detail}`,
+        ),
+      );
     });
   });
 
@@ -128,10 +148,8 @@ const resolveFfprobe = async (ffmpeg) => {
   return discovered;
 };
 
-const remotionCommand = () =>
-  process.platform === 'win32'
-    ? path.join(ROOT, 'node_modules', '.bin', 'remotion.cmd')
-    : path.join(ROOT, 'node_modules', '.bin', 'remotion');
+const remotionCli = () =>
+  path.join(ROOT, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
 
 const audioDuration = async (ffprobe, filename) => {
   const value = await capture(ffprobe, [
@@ -228,9 +246,14 @@ const renderFrames = async () => {
   console.log(
     `[ASTRO] Rendering ${kind} frames with Remotion (${scale === 1 ? '1920x1080' : '960x540'})...`,
   );
-  await run(remotionCommand(), commandArgs, {
-    shell: process.platform === 'win32',
-  });
+  const cli = remotionCli();
+  if (!(await exists(cli))) {
+    throw new Error(
+      'Remotion CLI entrypoint was not found. Run npm install in the ASTRO-Motion-Studio folder.',
+    );
+  }
+
+  await run(process.execPath, [cli, ...commandArgs]);
   return normalizeFrames();
 };
 
