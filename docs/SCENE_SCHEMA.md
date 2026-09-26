@@ -12,15 +12,17 @@ ASTRO Motion Studio uses `src/data/scenes.json` as the single source of truth.
 
 ## Narration
 
-Set `audioFile` to a path below `public/`, for example:
+Set `audioFile` to a WAV path below `public/`, for example:
 
 ```json
 {
-  "audioFile": "audio/03-compare.mp3"
+  "audioFile": "audio/03-compare.wav"
 }
 ```
 
-Run `npm run narrate`. After the MP3 exists, Remotion measures the real audio duration and extends the scene automatically when needed.
+Both the VOICEVOX and OpenAI providers output WAV, so the same `scenes.json` works when switching providers.
+
+Run `npm run narrate`. After the WAV exists, Remotion measures the real audio duration and extends the scene automatically when needed.
 
 ## Layout-specific fields
 
