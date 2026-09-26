@@ -1,10 +1,10 @@
 # ASTRO Motion Studio
 
-資料・分析結果を **ナレーション付きスライド動画** に変換するための、Remotion ベースの生成フレームワークです。
+資料・分析結果を **ナレーション付きスライド動画** に変換する、Remotion ベースの生成フレームワークです。
 
-初版の狙いは「毎回ゼロから動画を作る」のではなく、内容を `scenes.json` に集約し、同じ映像部品を何度でも再利用できるようにすることです。
+現在は **VOICEVOX / VOICEVOX Nemo を標準ナレーション** にしているため、ローカル環境だけで無料の音声生成ができます。必要な作品だけ OpenAI TTS に切り替えられます。
 
-## What it does
+## Pipeline
 
 ```
 PDF / Word / Excel / CSV / analysis
@@ -13,9 +13,15 @@ PDF / Word / Excel / CSV / analysis
               ↓
        scenes.json
               ↓
-        OpenAI TTS
+  ┌──────────────────────┐
+  │ Narration provider   │
+  │                      │
+  │ VOICEVOX  ← default  │
+  │ OpenAI     ← optional│
+  │ none                  │
+  └──────────────────────┘
               ↓
-       narration MP3
+        narration WAV
               ↓
           Remotion
               ↓
@@ -30,40 +36,64 @@ PDF / Word / Excel / CSV / analysis
 - Process — 手順・フロー
 - Summary — 要点整理
 
-音声ファイルが存在する場合は、実際のナレーション尺を読み取り、必要に応じて各スライドの表示時間を自動延長します。音声がまだなくても、`durationSeconds` を使ってプレビューできます。
+音声ファイルが存在する場合は、実際のナレーション尺を読み取り、必要に応じて各スライドの表示時間を自動延長します。音声がなくても `durationSeconds` を使ってプレビューできます。
 
-## Quick start
+## まず無料で動かす
 
-Node.js 20.6 以上を推奨します。
+### 1. VOICEVOX Nemo または VOICEVOX を起動
+
+ローカル音声エンジンが標準の
+
+```
+http://127.0.0.1:50021
+```
+
+で使える状態にします。
+
+### 2. ASTRO Motion Studio を準備
 
 ```bash
 npm install
-npm run studio
 ```
 
-Remotion Studio が開くので、まずサンプルスライドを確認できます。
+### 3. 使える声を確認
 
-## Generate narration
-
-1. `.env.example` を `.env` にコピー
-2. OpenAI API key を設定
-
-```env
-OPENAI_API_KEY=your_key_here
-ASTRO_VOICE=marin
+```bash
+npm run voices
 ```
 
-音声生成:
+話者名・スタイル名・IDが一覧表示されます。
+
+### 4. ナレーション生成
+
+設定なしでもVOICEVOXが標準です。
 
 ```bash
 npm run narrate
 ```
 
-生成された MP3 は `public/audio/` に保存されます。APIキーと生成音声は Git にコミットしません。
+初回は利用可能な最初の話者スタイルを自動選択します。
 
-OpenAI のTTS音声を利用するため、完成物ではAI生成音声であることが分かる表示を残してください。このテンプレートでは各スライド下部に `AI narration` と表示します。
+好きな声を固定したい場合だけ、`.env.example` を `.env` にコピーして設定します。
 
-## Render MP4
+```env
+ASTRO_TTS_PROVIDER=voicevox
+ASTRO_VOICEVOX_URL=http://127.0.0.1:50021
+ASTRO_VOICEVOX_SPEAKER_ID=1
+
+ASTRO_VOICEVOX_SPEED=1.0
+ASTRO_VOICEVOX_PITCH=0.0
+ASTRO_VOICEVOX_INTONATION=1.0
+ASTRO_VOICEVOX_VOLUME=1.0
+```
+
+### 5. プレビュー
+
+```bash
+npm run studio
+```
+
+### 6. MP4を書き出す
 
 ```bash
 npm run render
@@ -81,9 +111,42 @@ out/astro-motion-studio.mp4
 npm run make
 ```
 
+## 音声エンジンを切り替える
+
+### 無料ローカル音声
+
+```bash
+npm run narrate:voicevox
+```
+
+### OpenAI TTS
+
+`.env`:
+
+```env
+OPENAI_API_KEY=...
+ASTRO_OPENAI_VOICE=marin
+```
+
+実行:
+
+```bash
+npm run narrate:openai
+```
+
+### 音声なし
+
+```bash
+npm run narrate:none
+```
+
+VOICEVOX と OpenAI のどちらも WAV を生成するため、`scenes.json` を書き換えずに切り替えられます。
+
+詳細: `docs/TTS.md`
+
 ## Create your own presentation
 
-編集する中心ファイルはこれだけです。
+編集する中心ファイル:
 
 ```
 src/data/scenes.json
@@ -108,27 +171,51 @@ src/
 
 scripts/
   generate-narration.mjs
+  list-voicevox-speakers.mjs
+  lib/
+    env.mjs
+  tts/
+    voicevox.mjs
+    openai.mjs
 
 prompts/
   create-presentation.md
 
 docs/
   SCENE_SCHEMA.md
+  TTS.md
 
 public/
   audio/
 ```
 
+## Current commands
+
+```bash
+npm run studio
+npm run voices
+npm run narrate
+npm run narrate:voicevox
+npm run narrate:openai
+npm run narrate:none
+npm run render
+npm run make
+npm run typecheck
+npm run check:scripts
+```
+
 ## Next milestones
 
+- ブラウザUIで音声エンジン・話者・速度を選択
 - 資料アップロード → scenes.json 自動生成
 - 画像・図解生成レイヤー
 - 棒グラフ / 折れ線 / 因果推論 / 店舗比較などの分析テンプレート
 - 字幕の単語単位同期
 - BGM / SE ミキシング
 - 9:16 / 1:1 出力
-- ブラウザUIからテーマ・尺・声を変更
 - Cloud rendering
+
+> 公開・商用利用する場合は、選択した音声ごとの最新の利用規約・クレジット条件を確認してください。
 
 ---
 
